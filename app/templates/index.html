@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#17346B">
+  <meta name="description" content="Pães de mel, alfajores e brownies caseiros. Cada encomenda ajuda o Super Fefê.">
+  <title>{{ loja_nome }}</title>
+
+  <!-- Prévia ao compartilhar o link no WhatsApp -->
+  <meta property="og:title" content="{{ loja_nome }}">
+  <meta property="og:description" content="Doces que adoçam momentos. Feitos à mão, com muito carinho e aceitamos encomendas.💛">
+  <meta property="og:image" content="/static/img/logo.png">
+  <meta property="og:type" content="website">
+
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="icon" href="/static/img/logo.png">
+</head>
+<body data-data-minima="{{ data_minima }}" data-data-maxima="{{ data_maxima }}">
+
+<header class="capa">
+  <div class="capa-conteudo">
+    <div class="capa-texto">
+      <!-- O nome da loja já está dentro da logo; o h1 fica para leitores de tela. -->
+      <h1 class="so-leitor">{{ loja_nome }} — doces que adoçam momentos</h1>
+      <p>Feitos à mão, com muito carinho e aceitamos encomendas.💛</p>
+      <div class="faixa-bursts">
+        <span class="burst">T</span>
+        <span class="burst">2</span>
+        <span class="burst">1</span>
+
+        
+      </div>
+    </div>
+    <img src="/static/img/logo.png" alt="{{ loja_nome }}" class="capa-logo"
+         onerror="this.outerHTML='<span class=\'capa-emoji\'>🦸</span>'">
+  </div>
+</header>
+
+<!-- Aparece se a pessoa fechar o modal sem mandar a mensagem. -->
+<div class="aviso-pendente oculto" id="aviso-pendente">
+  <span id="aviso-pendente-texto"></span>
+  <a href="#" id="aviso-pendente-link" target="_blank" rel="noopener">Enviar agora</a>
+</div>
+
+<main class="container">
+
+  <!-- ===== TEXTO DA CAUSA — edite este bloco com as palavras de vocês ===== -->
+  <section class="causa">
+    <h2>Quem está por trás 💛</h2>
+    <p>
+      Somos uma família que buscamos tirar o melhor de um momento muito díficil
+      em prol do nosso Fefe que foi diagnosticado com leucemia recentemente.
+      É da nossa cozinha que saem todos os doces:
+      cada pão de mel, alfajor e brownie é feito com muito carinho, para adoçar momentos especiais.
+
+    </p>
+    <p>
+      Tudo o que arrecadamos é <strong>em prol do Fefê</strong>, o nosso Super Fefê.
+      Quando você encomenda um docinho aqui, você entra para a liga dele. 🦸
+    </p>
+  </section>
+
+  <!-- ETAPA 1: escolher os doces -->
+  <section id="etapa-doces">
+    <h2 class="titulo-secao"><span class="passo">1</span> Escolha seus doces</h2>
+    <div id="lista-produtos" class="produtos">
+      <p class="carregando">Carregando o cardápio…</p>
+    </div>
+  </section>
+
+  <!-- ETAPA 2: dados do pedido -->
+  <section id="etapa-dados">
+    <h2 class="titulo-secao"><span class="passo">2</span> Seus dados</h2>
+
+    <form id="form-pedido" novalidate>
+      <div class="campo">
+        <label for="nome">Seu nome</label>
+        <input type="text" id="nome" name="nome" placeholder="Ex.: Beatriz" maxlength="80"
+               autocomplete="name" required>
+      </div>
+
+      <div class="campo">
+        <label for="telefone">Seu WhatsApp</label>
+        <input type="tel" id="telefone" name="telefone" placeholder="(11) 98765-4321"
+               inputmode="numeric" autocomplete="tel" maxlength="16" required>
+      </div>
+
+      <div class="campo">
+        <label for="data">Para quando você quer?</label>
+        <input type="date" id="data" name="data" required>
+        <small class="dica" id="dica-data"></small>
+      </div>
+
+      <fieldset class="campo">
+        <legend>Como prefere receber?</legend>
+        <div class="opcoes-modo">
+          <label class="opcao">
+            <input type="radio" name="modo" value="retirada" checked>
+            <span class="opcao-caixa">
+              <strong>🏠 Vou buscar</strong>
+              <small>Combinamos o horário pelo WhatsApp</small>
+            </span>
+          </label>
+          <label class="opcao">
+            <input type="radio" name="modo" value="entrega">
+            <span class="opcao-caixa">
+              <strong>🛵 Quero que entregue</strong>
+              <small>Informe o endereço abaixo</small>
+            </span>
+          </label>
+        </div>
+      </fieldset>
+
+      <div class="campo oculto" id="campo-endereco">
+        <label for="endereco">Endereço completo</label>
+        <textarea id="endereco" name="endereco" rows="3" maxlength="300"
+                  placeholder="Rua, número, complemento, bairro e um ponto de referência"></textarea>
+      </div>
+
+      <div class="campo">
+        <label for="obs">Alguma observação? <span class="opcional">(opcional)</span></label>
+        <textarea id="obs" name="obs" rows="2" maxlength="300"
+                  placeholder="Ex.: sem nozes, embalagem de presente…"></textarea>
+      </div>
+
+      <p id="erro-form" class="erro" hidden></p>
+
+      <button type="submit" class="botao-principal" id="btn-enviar" disabled>
+        Enviar pedido pelo WhatsApp
+      </button>
+      <p class="aviso-rodape">
+        Você será levado ao WhatsApp com o pedido já escrito — é só apertar enviar.
+        A gente confirma a data e o pagamento é combinado na conversa.
+      </p>
+    </form>
+  </section>
+</main>
+
+<!-- Barra fixa com o total -->
+<div class="barra-total oculto" id="barra-total">
+  <div class="barra-info">
+    <span id="barra-itens">0 itens</span>
+    <strong id="barra-valor">R$ 0,00</strong>
+  </div>
+  <button type="button" class="botao-barra" id="btn-ir-dados">Continuar</button>
+</div>
+
+<!-- Tela de sucesso -->
+<div class="modal oculto" id="modal-sucesso">
+  <div class="modal-caixa">
+    <button type="button" class="modal-fechar" id="btn-fechar-sucesso" aria-label="Fechar">×</button>
+
+    <span class="modal-emoji" id="ms-emoji">📝</span>
+    <h2 id="ms-titulo">Falta um passo!</h2>
+    <p class="selo-pendente" id="ms-selo">⏳ Registrado · ainda não confirmado</p>
+    <p id="ms-texto">
+      Anotamos seu pedido, mas ele <strong>só vale depois que a gente confirmar</strong>.
+      Envie a mensagem no WhatsApp — respondemos com a confirmação da data.
+    </p>
+    <p class="modal-resumo" id="modal-resumo"></p>
+    <a href="#" class="botao-whatsapp" id="btn-whatsapp" target="_blank" rel="noopener">
+      Abrir o WhatsApp e enviar
+    </a>
+    <button type="button" class="botao-texto" id="btn-novo-pedido">Fazer outro pedido</button>
+  </div>
+</div>
+
+<footer class="rodape">
+  <p>{{ loja_nome }} · doces que adoçam momentos 💛</p>
+</footer>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>

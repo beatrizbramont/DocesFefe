@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Painel · {{ loja_nome }}</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="icon" href="/static/img/logo.png">
+</head>
+<body style="padding-bottom:0">
+
+<header class="admin-topo">
+  <h1>
+    <img src="/static/img/logo.png" alt="" class="admin-logo" onerror="this.remove()">
+    {{ loja_nome }} — Painel
+  </h1>
+  <a href="/admin/sair">Sair</a>
+</header>
+
+<nav class="abas" id="abas">
+  <button class="aba ativa" data-aba="pedidos">📋 Pedidos</button>
+  <button class="aba" data-aba="doces">🍫 Meus doces</button>
+  <span class="numero-ativo" title="Número que está recebendo os pedidos agora.
+Se você mudou o .env, precisa desligar e ligar o site de novo.">
+    📱 Pedidos chegam em <strong>{{ whatsapp_ativo }}</strong>
+  </span>
+</nav>
+
+<main class="admin-container">
+
+  <!-- ======================= ABA PEDIDOS ======================= -->
+  <section id="aba-pedidos">
+    <div class="resumo" id="resumo">
+      <div class="cartao"><span>Aguardando você</span><strong id="r-pendentes">—</strong></div>
+      <div class="cartao"><span>Aprovados</span><strong id="r-aprovados">—</strong></div>
+      <div class="cartao"><span>A entregar</span><strong id="r-entregar">—</strong></div>
+      <div class="cartao"><span>A receber</span><strong id="r-faturamento">—</strong></div>
+    </div>
+
+    <div class="barra-acoes">
+      <div class="filtros" id="filtros">
+        <button class="filtro ativo" data-status="abertos">Em aberto</button>
+        <button class="filtro" data-status="pendente">Aguardando</button>
+        <button class="filtro" data-status="aprovado">Aprovados</button>
+        <button class="filtro" data-status="entregue">Entregues</button>
+        <button class="filtro" data-status="recusado">Recusados</button>
+        <button class="filtro" data-status="">Tudo</button>
+      </div>
+      <a class="botao-planilha" href="/admin/planilha">⬇ Baixar planilha (Excel)</a>
+    </div>
+
+    <div id="lista-pedidos">
+      <p class="vazio">Carregando pedidos…</p>
+    </div>
+  </section>
+
+  <!-- ======================= ABA DOCES ======================= -->
+  <section id="aba-doces" class="oculto">
+    <div class="barra-acoes">
+      <p class="explica">
+        Mude preços, descrições e fotos quando quiser. O site do cliente atualiza na hora.
+      </p>
+      <button class="botao-planilha" id="btn-novo-doce" style="background:var(--roxo)">
+        ✚ Novo doce
+      </button>
+    </div>
+    <div id="lista-doces">
+      <p class="vazio">Carregando…</p>
+    </div>
+  </section>
+</main>
+
+<!-- ======================= MODAL: editar pedido ======================= -->
+<div class="modal oculto" id="modal-pedido">
+  <div class="modal-caixa modal-largo">
+    <h2>Editar pedido</h2>
+    <form id="form-pedido-edit">
+      <input type="hidden" id="ep-id">
+
+      <div class="campo">
+        <label>Quantidades</label>
+        <div id="ep-itens" class="editor-itens"></div>
+      </div>
+
+      <div class="campo">
+        <label for="ep-data">Data da entrega</label>
+        <input type="date" id="ep-data" required>
+      </div>
+
+      <fieldset class="campo">
+        <legend>Como receber</legend>
+        <div class="opcoes-modo">
+          <label class="opcao">
+            <input type="radio" name="ep-modo" value="retirada">
+            <span class="opcao-caixa"><strong>🏠 Vai buscar</strong></span>
+          </label>
+          <label class="opcao">
+            <input type="radio" name="ep-modo" value="entrega">
+            <span class="opcao-caixa"><strong>🛵 Entregar</strong></span>
+          </label>
+        </div>
+      </fieldset>
+
+      <div class="campo oculto" id="ep-campo-endereco">
+        <label for="ep-endereco">Endereço</label>
+        <textarea id="ep-endereco" rows="2" maxlength="300"></textarea>
+      </div>
+
+      <div class="campo">
+        <label for="ep-obs">Observações</label>
+        <textarea id="ep-obs" rows="2" maxlength="300"></textarea>
+      </div>
+
+      <p class="total-editor">Novo total: <strong id="ep-total">R$ 0,00</strong></p>
+      <p class="erro" id="ep-erro" hidden></p>
+
+      <div class="modal-botoes">
+        <button type="button" class="btn-acao" data-fechar="modal-pedido">Cancelar</button>
+        <button type="submit" class="btn-acao aprovar">Salvar alterações</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ======================= MODAL: editar doce ======================= -->
+<div class="modal oculto" id="modal-doce">
+  <div class="modal-caixa modal-largo">
+    <h2 id="md-titulo">Novo doce</h2>
+    <form id="form-doce">
+      <input type="hidden" id="md-id">
+
+      <div class="foto-editor">
+        <div class="foto-previa" id="md-previa">🍬</div>
+        <div class="foto-acoes">
+          <!-- "for" explícito + input escondido por CSS (e não por "hidden"):
+               input com display:none dentro de label não abre a câmera/galeria
+               em alguns navegadores de celular. -->
+          <label class="btn-acao rotulo-arquivo" for="md-arquivo">📷 Escolher foto</label>
+          <input type="file" id="md-arquivo" class="input-arquivo"
+                 accept="image/*,.heic,.heif">
+
+          <button type="button" class="btn-acao recusar oculto" id="md-remover-foto">
+            Remover foto
+          </button>
+          <small>Pode ser foto do celular · até 20 MB</small>
+        </div>
+      </div>
+
+      <div class="campo">
+        <label for="md-nome">Nome do doce</label>
+        <input type="text" id="md-nome" maxlength="80" required>
+      </div>
+
+      <div class="campo">
+        <label for="md-descricao">Descrição</label>
+        <textarea id="md-descricao" rows="2" maxlength="200"></textarea>
+      </div>
+
+      <div class="linha-dupla">
+        <div class="campo">
+          <label for="md-preco">Preço (R$)</label>
+          <input type="text" id="md-preco" inputmode="decimal" placeholder="8,00" required>
+        </div>
+        <div class="campo">
+          <label for="md-unidade">Vendido por</label>
+          <input type="text" id="md-unidade" maxlength="20" placeholder="unidade">
+        </div>
+      </div>
+
+      <div class="linha-dupla">
+        <div class="campo">
+          <label for="md-emoji">Emoji <span class="opcional">(se não tiver foto)</span></label>
+          <input type="text" id="md-emoji" maxlength="8" placeholder="🍫">
+        </div>
+        <div class="campo">
+          <label for="md-ativo">Aparece no site?</label>
+          <select id="md-ativo">
+            <option value="1">Sim, à venda</option>
+            <option value="0">Não, esconder</option>
+          </select>
+        </div>
+      </div>
+
+      <p class="erro" id="md-erro" hidden></p>
+
+      <div class="modal-botoes">
+        <button type="button" class="btn-acao" data-fechar="modal-doce">Cancelar</button>
+        <button type="submit" class="btn-acao aprovar" id="md-salvar">Salvar doce</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/static/js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+
+# Configuração com senha e número de telefone — nunca versionar.
+.env
+
+# Dados reais da loja
+docesfefe.db
+exports/
+app/static/img/produtos/*
+!app/static/img/produtos/.gitkeep
