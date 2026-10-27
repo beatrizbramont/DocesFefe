@@ -20,6 +20,7 @@
 <nav class="abas" id="abas">
   <button class="aba ativa" data-aba="pedidos">📋 Pedidos</button>
   <button class="aba" data-aba="doces">🍫 Meus doces</button>
+  <button class="aba" data-aba="recebimentos">💰 Recebimentos</button>
   <span class="numero-ativo" title="Número que está recebendo os pedidos agora.
 Se você mudou o .env, precisa desligar e ligar o site de novo.">
     📱 Pedidos chegam em <strong>{{ whatsapp_ativo }}</strong>
@@ -46,6 +47,9 @@ Se você mudou o .env, precisa desligar e ligar o site de novo.">
         <button class="filtro" data-status="recusado">Recusados</button>
         <button class="filtro" data-status="">Tudo</button>
       </div>
+      <button class="botao-planilha" id="btn-novo-pedido" style="background:var(--roxo)">
+        ✚ Novo pedido
+      </button>
       <a class="botao-planilha" href="/admin/planilha">⬇ Baixar planilha (Excel)</a>
     </div>
 
@@ -68,14 +72,95 @@ Se você mudou o .env, precisa desligar e ligar o site de novo.">
       <p class="vazio">Carregando…</p>
     </div>
   </section>
+
+  <!-- ======================= ABA RECEBIMENTOS ======================= -->
+  <section id="aba-recebimentos" class="oculto">
+
+    <!-- Os filtros valem para o resumo, o gráfico e a tabela ao mesmo tempo. -->
+    <div class="filtros-receb">
+      <div class="grupo-filtro" id="rec-granularidade">
+        <button class="filtro" data-gran="dia">Por dia</button>
+        <button class="filtro ativo" data-gran="mes">Por mês</button>
+        <button class="filtro" data-gran="ano">Por ano</button>
+      </div>
+      <div class="grupo-filtro" id="rec-presets">
+        <button class="filtro" data-dias="30">Últimos 30 dias</button>
+        <button class="filtro" data-dias="365">Último ano</button>
+        <button class="filtro ativo" data-dias="">Tudo</button>
+      </div>
+      <div class="grupo-filtro periodo-custom">
+        <label for="rec-de">De</label>
+        <input type="date" id="rec-de">
+        <label for="rec-ate">até</label>
+        <input type="date" id="rec-ate">
+      </div>
+    </div>
+
+    <div class="resumo">
+      <div class="cartao destaque">
+        <span>Total recebido</span><strong id="rec-total">—</strong>
+      </div>
+      <div class="cartao"><span>Pedidos entregues</span><strong id="rec-pedidos">—</strong></div>
+      <div class="cartao"><span>Média por pedido</span><strong id="rec-ticket">—</strong></div>
+      <div class="cartao">
+        <span id="rec-melhor-rotulo">Melhor período</span><strong id="rec-melhor">—</strong>
+      </div>
+    </div>
+
+    <figure class="grafico-caixa">
+      <figcaption id="rec-titulo-grafico">Recebido por mês</figcaption>
+      <p class="explica">
+        Conta só pedidos já marcados como <b>entregues</b>, na data da entrega.
+      </p>
+      <div class="grafico-area">
+        <div id="rec-grafico"></div>
+        <div class="grafico-dica oculto" id="rec-dica" role="status"></div>
+      </div>
+    </figure>
+
+    <div class="tabela-wrap">
+      <table class="tabela-receb">
+        <caption class="so-leitor">Recebimentos por período</caption>
+        <thead>
+          <tr>
+            <th scope="col">Período</th>
+            <th scope="col" class="num">Pedidos</th>
+            <th scope="col" class="num">Doces</th>
+            <th scope="col" class="num">Recebido</th>
+          </tr>
+        </thead>
+        <tbody id="rec-tabela"></tbody>
+        <tfoot>
+          <tr>
+            <th scope="row">Total</th>
+            <td class="num" id="rec-tot-pedidos">—</td>
+            <td class="num" id="rec-tot-doces">—</td>
+            <td class="num" id="rec-tot-valor">—</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </section>
 </main>
 
 <!-- ======================= MODAL: editar pedido ======================= -->
 <div class="modal oculto" id="modal-pedido">
   <div class="modal-caixa modal-largo">
-    <h2>Editar pedido</h2>
+    <h2 id="ep-titulo">Editar pedido</h2>
     <form id="form-pedido-edit">
       <input type="hidden" id="ep-id">
+
+      <div class="linha-dupla">
+        <div class="campo">
+          <label for="ep-nome">Nome do cliente</label>
+          <input type="text" id="ep-nome" maxlength="80" autocomplete="name" required>
+        </div>
+        <div class="campo">
+          <label for="ep-telefone">WhatsApp <span class="opcional">(opcional)</span></label>
+          <input type="tel" id="ep-telefone" maxlength="16" inputmode="numeric"
+                 placeholder="(11) 98765-4321" autocomplete="tel">
+        </div>
+      </div>
 
       <div class="campo">
         <label>Quantidades</label>
@@ -85,6 +170,18 @@ Se você mudou o .env, precisa desligar e ligar o site de novo.">
       <div class="campo">
         <label for="ep-data">Data da entrega</label>
         <input type="date" id="ep-data" required>
+      </div>
+
+      <!-- Só aparece ao cadastrar: para mudar a situação de um pedido que já
+           existe, os botões do cartão são mais diretos. -->
+      <div class="campo oculto" id="ep-campo-status">
+        <label for="ep-status">Situação</label>
+        <select id="ep-status">
+          <!-- Textos curtos: no celular o select corta o que não couber. -->
+          <option value="aprovado">Aprovado (já combinei)</option>
+          <option value="entregue">Entregue (já recebi)</option>
+          <option value="pendente">Aguardando confirmação</option>
+        </select>
       </div>
 
       <fieldset class="campo">
@@ -116,7 +213,7 @@ Se você mudou o .env, precisa desligar e ligar o site de novo.">
 
       <div class="modal-botoes">
         <button type="button" class="btn-acao" data-fechar="modal-pedido">Cancelar</button>
-        <button type="submit" class="btn-acao aprovar">Salvar alterações</button>
+        <button type="submit" class="btn-acao aprovar" id="ep-salvar">Salvar alterações</button>
       </div>
     </form>
   </div>

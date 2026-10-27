@@ -1,5 +1,5 @@
 import secrets
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
@@ -19,7 +19,7 @@ from app.models import (
     Produto,
 )
 from app.planilha import gerar_planilha
-from app.schemas import PedidoEditIn, ProdutoIn
+from app.schemas import PedidoEditIn, PedidoNovoIn, ProdutoIn
 from app.templates_engine import templates
 from app.whatsapp import brl, telefone_formatado
 
@@ -166,6 +166,47 @@ def mudar_status(pedido_id: int, payload: dict, db: Session = Depends(get_db)):
     return {"ok": True, "status": novo, "resumo": _resumo(db)}
 
 
+@router.post("/api/pedidos", dependencies=[Depends(exigir_login)], status_code=201)
+def criar_pedido_manual(dados: PedidoNovoIn, db: Session = Depends(get_db)):
+    """Pedido combinado por fora do site (WhatsApp, pessoalmente, na feira).
+
+    Preço usado é o de hoje, e a planilha é regerada igual às outras ações.
+    """
+    ids = [i.produto_id for i in dados.itens]
+    produtos = {
+        p.id: p for p in db.scalars(select(Produto).where(Produto.id.in_(ids))).all()
+    }
+    if set(ids) - produtos.keys():
+        raise HTTPException(400, "Um dos doces escolhidos não existe mais.")
+
+    pedido = Pedido(
+        cliente_nome=dados.cliente_nome,
+        cliente_telefone=dados.cliente_telefone,
+        data_entrega=dados.data_entrega,
+        modo=dados.modo,
+        endereco=dados.endereco,
+        observacoes=dados.observacoes,
+        status=dados.status,
+    )
+    for item in dados.itens:
+        produto = produtos[item.produto_id]
+        pedido.itens.append(
+            ItemPedido(
+                produto_id=produto.id,
+                produto_nome=produto.nome,
+                preco_unitario=produto.preco,
+                quantidade=item.quantidade,
+            )
+        )
+    pedido.total = round(sum(i.subtotal for i in pedido.itens), 2)
+
+    db.add(pedido)
+    db.commit()
+    db.refresh(pedido)
+    _regerar_planilha(db)
+    return {"ok": True, "id": pedido.id, "resumo": _resumo(db)}
+
+
 @router.put("/api/pedidos/{pedido_id}", dependencies=[Depends(exigir_login)])
 def editar_pedido(pedido_id: int, dados: PedidoEditIn, db: Session = Depends(get_db)):
     """Corrige um pedido: quantidades, doces, data, forma de entrega e observações."""
@@ -196,6 +237,8 @@ def editar_pedido(pedido_id: int, dados: PedidoEditIn, db: Session = Depends(get
             )
         )
 
+    pedido.cliente_nome = dados.cliente_nome
+    pedido.cliente_telefone = dados.cliente_telefone
     pedido.data_entrega = dados.data_entrega
     pedido.modo = dados.modo
     pedido.endereco = dados.endereco
@@ -216,6 +259,127 @@ def excluir_pedido(pedido_id: int, db: Session = Depends(get_db)):
     db.commit()
     _regerar_planilha(db)
     return {"ok": True, "resumo": _resumo(db)}
+
+
+# ----------------------------------------------------------------- recebimentos
+
+GRANULARIDADES = ("dia", "mes", "ano")
+MES_CURTO = ("jan", "fev", "mar", "abr", "mai", "jun",
+             "jul", "ago", "set", "out", "nov", "dez")
+MES_LONGO = ("janeiro", "fevereiro", "março", "abril", "maio", "junho",
+             "julho", "agosto", "setembro", "outubro", "novembro", "dezembro")
+
+
+def _inicio_do_periodo(d: date, gran: str) -> date:
+    if gran == "ano":
+        return date(d.year, 1, 1)
+    if gran == "mes":
+        return date(d.year, d.month, 1)
+    return d
+
+
+def _periodo_seguinte(d: date, gran: str) -> date:
+    if gran == "ano":
+        return date(d.year + 1, 1, 1)
+    if gran == "mes":
+        return date(d.year + 1, 1, 1) if d.month == 12 else date(d.year, d.month + 1, 1)
+    return d + timedelta(days=1)
+
+
+def _rotulos(d: date, gran: str) -> tuple[str, str]:
+    """(curto para o eixo do gráfico, longo para a tabela)"""
+    if gran == "ano":
+        return str(d.year), str(d.year)
+    if gran == "mes":
+        return f"{MES_CURTO[d.month - 1]}/{str(d.year)[2:]}", f"{MES_LONGO[d.month - 1]} de {d.year}"
+    return d.strftime("%d/%m"), d.strftime("%d/%m/%Y")
+
+
+def _data_ou_nada(texto: str) -> date | None:
+    try:
+        return date.fromisoformat(texto) if texto else None
+    except ValueError:
+        raise HTTPException(400, "Data do filtro inválida.") from None
+
+
+@router.get("/api/recebimentos", dependencies=[Depends(exigir_login)])
+def recebimentos(
+    granularidade: str = "mes",
+    de: str = "",
+    ate: str = "",
+    db: Session = Depends(get_db),
+):
+    """Quanto entrou, agrupado por dia / mês / ano.
+
+    Conta só o que já foi **entregue** — aprovado ainda pode furar — e joga o
+    valor na **data da entrega**, que é quando o doce saiu e o dinheiro entrou.
+    """
+    if granularidade not in GRANULARIDADES:
+        raise HTTPException(400, "Agrupamento inválido.")
+
+    inicio, fim = _data_ou_nada(de), _data_ou_nada(ate)
+    if inicio and fim and inicio > fim:
+        inicio, fim = fim, inicio
+
+    consulta = select(Pedido).where(Pedido.status == ENTREGUE)
+    if inicio:
+        consulta = consulta.where(Pedido.data_entrega >= inicio)
+    if fim:
+        consulta = consulta.where(Pedido.data_entrega <= fim)
+    pedidos = list(db.scalars(consulta.order_by(Pedido.data_entrega)).all())
+
+    # Soma por período.
+    baldes: dict[date, dict] = {}
+    for p in pedidos:
+        chave = _inicio_do_periodo(p.data_entrega, granularidade)
+        balde = baldes.setdefault(chave, {"total": 0.0, "pedidos": 0, "doces": 0})
+        balde["total"] += p.total
+        balde["pedidos"] += 1
+        balde["doces"] += sum(i.quantidade for i in p.itens)
+
+    # Períodos sem nenhuma entrega entram zerados, senão o gráfico mente: dois
+    # meses vizinhos no eixo podem estar a um ano de distância.
+    periodos = []
+    if baldes:
+        cursor = min(baldes)
+        ultimo = max(baldes)
+        # Em "por dia" um intervalo longo viraria centenas de barras vazias.
+        preencher = granularidade != "dia" or (ultimo - cursor).days <= 92
+        while cursor <= ultimo:
+            dados = baldes.get(cursor)
+            if dados or preencher:
+                dados = dados or {"total": 0.0, "pedidos": 0, "doces": 0}
+                curto, longo = _rotulos(cursor, granularidade)
+                periodos.append(
+                    {
+                        "chave": cursor.isoformat(),
+                        "rotulo": curto,
+                        "rotulo_longo": longo,
+                        "total": round(dados["total"], 2),
+                        "total_formatado": brl(round(dados["total"], 2)),
+                        "pedidos": dados["pedidos"],
+                        "doces": dados["doces"],
+                    }
+                )
+            cursor = _periodo_seguinte(cursor, granularidade)
+
+    total = round(sum(p.total for p in pedidos), 2)
+    com_valor = [p for p in periodos if p["pedidos"]]
+    melhor = max(com_valor, key=lambda p: p["total"], default=None)
+
+    return {
+        "granularidade": granularidade,
+        "periodos": periodos,
+        "resumo": {
+            "total": total,
+            "total_formatado": brl(total),
+            "pedidos": len(pedidos),
+            "doces": sum(sum(i.quantidade for i in p.itens) for p in pedidos),
+            "ticket_formatado": brl(round(total / len(pedidos), 2)) if pedidos else brl(0),
+            "melhor_rotulo": melhor["rotulo_longo"] if melhor else "—",
+            "melhor_formatado": melhor["total_formatado"] if melhor else brl(0),
+        },
+    }
 
 
 # ----------------------------------------------------------------- planilha

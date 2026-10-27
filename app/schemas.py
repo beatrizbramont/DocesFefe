@@ -68,16 +68,27 @@ class PedidoEditIn(BaseModel):
     precisar corrigir um pedido para hoje, ou registrar algo combinado por fora.
     """
 
+    cliente_nome: str = Field(min_length=2, max_length=80)
+    # Opcional: venda de balcão nem sempre tem telefone para anotar.
+    cliente_telefone: str = Field(default="", max_length=20)
     data_entrega: date
     modo: Literal["retirada", "entrega"]
     endereco: str = Field(default="", max_length=300)
     observacoes: str = Field(default="", max_length=300)
     itens: list[ItemIn] = Field(min_length=1)
 
-    @field_validator("endereco", "observacoes")
+    @field_validator("cliente_nome", "endereco", "observacoes")
     @classmethod
     def limpar(cls, v: str) -> str:
         return v.strip()
+
+    @field_validator("cliente_telefone")
+    @classmethod
+    def telefone_se_tiver(cls, v: str) -> str:
+        digitos = "".join(c for c in v if c.isdigit())
+        if digitos and not 10 <= len(digitos) <= 13:
+            raise ValueError("Telefone inválido. Use DDD + número, ex.: (11) 98765-4321")
+        return digitos
 
     @model_validator(mode="after")
     def consistencia(self) -> "PedidoEditIn":
@@ -89,6 +100,17 @@ class PedidoEditIn(BaseModel):
         if len(ids) != len(set(ids)):
             raise ValueError("O mesmo doce aparece duas vezes no pedido.")
         return self
+
+
+class PedidoNovoIn(PedidoEditIn):
+    """Pedido que chegou por fora do site e ela registra na mão.
+
+    Herda tudo do de edição e acrescenta a situação: quem anota um pedido já
+    combinado normalmente quer ele como *aprovado*; e quem está lançando uma
+    venda antiga, para o relatório de recebimentos ficar certo, quer *entregue*.
+    """
+
+    status: Literal["pendente", "aprovado", "entregue"] = "aprovado"
 
 
 class ProdutoOut(BaseModel):

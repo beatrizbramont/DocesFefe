@@ -1,4 +1,4 @@
-# DoceFefe.21 🦸
+# DOCEFEFE.21 🦸
 
 Site de encomendas de doces. O cliente monta o pedido, é levado ao WhatsApp com a
 mensagem pronta, e a dona da loja aprova pelo painel — cada aprovação atualiza a
@@ -62,11 +62,14 @@ um emoji no lugar — nada quebra.
 Abra o `.env` e preencha:
 
 ```ini
-LOJA_NOME=DoceFefe.21
+LOJA_NOME=DOCEFEFE.21
 
 # WhatsApp da sua mãe, com 55 + DDD, só números.
 # (11) 98765-4321  ->  5511987654321
 WHATSAPP_NUMERO=5511987654321
+
+# Perfil do Instagram. O botão do topo do site leva para cá.
+INSTAGRAM_URL=https://www.instagram.com/docefefe.21
 
 # Senha do painel
 ADMIN_SENHA=escolha-uma-senha
@@ -77,6 +80,9 @@ SECRET_KEY=...
 
 # Antecedência mínima para encomendar. 1 = só a partir de amanhã.
 ANTECEDENCIA_DIAS=1
+
+# Banco. Vazio = arquivo local. Veja "Levar o banco para o Supabase".
+DATABASE_URL=
 ```
 
 > ⚠️ O `.env` tem senha e telefone. Ele já está no `.gitignore` — não mande para
@@ -104,7 +110,7 @@ preços de exemplo. **Corrija os preços** na aba *Meus doces* do painel.
 3. Ao enviar, o pedido é salvo e ele cai no WhatsApp da sua mãe com tudo escrito:
 
 ```
-*NOVO PEDIDO — DoceFefe.21*
+*NOVO PEDIDO — DOCEFEFE.21*
 
 *Cliente:* Beatriz
 *Telefone:* (11) 98765-4321
@@ -116,16 +122,39 @@ preços de exemplo. **Corrija os preços** na aba *Meus doces* do painel.
 *Para quando:* 27/10/2026
 *Entrega:* Cliente vai buscar
 
-_Pedido #12 — aguardando sua confirmação_
+_Pedido realizado pelo site — aguardando sua confirmação_
 ```
+
+No topo do site: **botão do Instagram** e **"Fazer meu pedido"** à esquerda, a
+frase no meio com o **T 2 1** logo abaixo, e a **logo à direita**. No celular
+isso vira uma coluna só — logo, frase, T21 e os dois botões largos embaixo, que
+é onde o polegar alcança.
+
+> 📱 **Tudo é feito pelo celular**, tanto o cliente quanto sua mãe no painel.
+> Por isso os botões têm no mínimo 44px de altura (o tamanho em que o dedo não
+> erra) e as telas foram conferidas em 360px e 390px de largura, sem nada
+> vazando para fora. Se for mexer no CSS, confira nessas larguras.
+
+> 🔢 **O cliente nunca vê número de pedido.** O número é o id do banco e vinha
+> sendo lido como "este é o meu sétimo pedido". No painel da sua mãe o
+> `Pedido #7` continua aparecendo, que é onde ele serve para alguma coisa.
 
 ### Para a sua mãe (`/admin`)
 
 **Aba Pedidos**
 - Vê tudo que chegou, com quanto falta para cada entrega (*é hoje!*, *é amanhã*).
+- **✚ Novo pedido** — para quem encomenda **sem usar o site** (pelo WhatsApp,
+  pessoalmente, na feira). Pede nome, doces, data e forma de entrega; o
+  **telefone é opcional**, porque venda de balcão nem sempre tem um para anotar
+  (sem telefone, o cartão simplesmente não mostra o botão de WhatsApp).
+  Na hora de cadastrar dá para escolher a situação:
+  - *Aprovado* — já combinei, vou preparar (é o normal);
+  - *Entregue* — já entreguei e recebi. Serve para **lançar venda antiga** e a
+    aba Recebimentos ficar certa;
+  - *Aguardando confirmação* — ainda vou confirmar com a pessoa.
 - **Aprovar / Recusar / Marcar entregue** — a planilha é regerada a cada clique.
-- **✏ Editar** — muda quantidades, troca doces, muda a data, o endereço e as
-  observações. Útil quando o cliente muda de ideia pelo WhatsApp.
+- **✏ Editar** — muda nome, telefone, quantidades, troca doces, muda a data, o
+  endereço e as observações. Útil quando o cliente muda de ideia pelo WhatsApp.
 - **💬 Falar com o cliente** — abre o WhatsApp do cliente direto.
 - **⬇ Baixar planilha (Excel)** — a planilha de controle, ordenada por data de
   entrega, com filtro e total.
@@ -141,6 +170,24 @@ _Pedido #12 — aguardando sua confirmação_
 
 > 💡 Preço antigo é preservado: se ela subir o preço do pão de mel hoje, os
 > pedidos feitos ontem continuam valendo o preço de ontem.
+
+**Aba Recebimentos**
+- Quanto entrou, em **gráfico** e em **tabela**, agrupado por **dia, mês ou ano**.
+- Filtro por período: atalhos (*últimos 30 dias*, *último ano*, *tudo*) ou um
+  intervalo escolhido à mão. O filtro vale para os quatro cartões, o gráfico e a
+  tabela ao mesmo tempo — os números nunca discordam entre si.
+- Passando o mouse (ou com o Tab, pelo teclado) cada barra mostra o valor, o
+  número de pedidos e quantos doces saíram naquele período.
+
+> 💰 **O que conta como recebido:** só o pedido já marcado como **entregue**, e
+> o valor cai na **data da entrega**. Aprovado ainda pode furar, por isso não
+> entra. Quem quer ver o que está por vir usa o cartão *A receber* na aba
+> Pedidos.
+
+> 📅 Mês sem nenhuma entrega aparece zerado no gráfico, de propósito: sem isso
+> dois meses vizinhos no eixo poderiam estar a um ano de distância. Em "por
+> dia", se o intervalo passar de 3 meses, só os dias com entrega aparecem —
+> senão seriam centenas de barras vazias.
 
 ---
 
@@ -163,6 +210,7 @@ de **TOTAL** somando só o que está aprovado ou entregue.
 DocesFefe/
 ├── iniciar.ps1              ← liga o site
 ├── .env                     ← senha e WhatsApp (não versionar)
+├── migrar_para_supabase.py  ← leva o banco local para o Supabase
 ├── docesfefe.db             ← banco SQLite (criado sozinho)
 ├── exports/pedidos.xlsx     ← planilha de controle
 └── app/
@@ -184,14 +232,86 @@ DocesFefe/
 
 ---
 
-## Publicar na internet
+## Levar o banco para o Supabase
 
-Hoje roda só no computador de vocês. Para gerar um link que funcione em qualquer
-lugar, o caminho mais simples é **Render** ou **Railway** (ambos com plano
-gratuito e suporte a Python). É preciso trocar duas coisas:
+O código **já está pronto** para Postgres: enquanto `DATABASE_URL` estiver vazia
+no `.env`, o site usa o arquivo local de sempre; assim que você colar a conexão,
+ele passa a usar o Supabase. Nada mais muda.
 
-1. O SQLite some a cada deploy nesses planos — usar um disco persistente ou
-   trocar para Postgres (ambos têm opção gratuita).
-2. Ligar `https_only=True` no cookie de sessão (`app/main.py`).
+### 1. Criar o projeto
 
-Me chame quando quiserem publicar que eu preparo.
+Em <https://supabase.com>, **New project**. Na tela de criação:
+
+| Campo | O que pôr |
+|---|---|
+| **Nome do projeto** | `docefefe` (ou o que quiser) |
+| **Senha do banco de dados** | Uma senha forte **só com letras e números**. **Copie e guarde** — ela aparece uma vez só. |
+| **Região** | Abra a lista e escolha **South America (São Paulo)** — quanto mais perto, mais rápido. "Américas" sozinho não basta. |
+| **Habilitar API de Dados** | **Desmarque.** |
+| GitHub | Pode ignorar. |
+
+Depois espere uns dois minutos até o projeto ficar verde.
+
+> 🔑 **Por que a senha só com letras e números:** `@`, `/`, `#` e `:` têm
+> significado especial dentro do endereço de conexão e quebram a leitura dele.
+> Se você já gerou uma senha com esses caracteres, troque em
+> *Settings → Database → Reset database password*.
+
+> 🔒 **Por que desmarcar a API de Dados:** ela publica as tabelas numa API REST
+> aberta. Nosso site não usa essa API — ele conecta direto no Postgres. E como
+> as tabelas são criadas pelo `migrar_para_supabase.py`, e não pela tela do
+> Supabase, elas não ganham a trava de segurança por linha sozinhas: nome,
+> telefone e endereço dos clientes ficariam acessíveis a quem tivesse a chave
+> pública do projeto. Se você já criou o projeto com ela marcada, tudo bem — o
+> script liga a trava (*Row Level Security*) nas três tabelas no fim da
+> migração.
+
+### 2. Pegar a connection string
+
+No projeto: botão **Connect**, no topo → aba **Connection string** → escolha
+**Session pooler**. Vai aparecer algo assim:
+
+```
+postgresql://postgres.abcdefgh:[YOUR-PASSWORD]@aws-1-sa-east-1.pooler.supabase.com:5432/postgres
+```
+
+Troque `[YOUR-PASSWORD]` pela senha do passo 1 e cole no `.env`:
+
+```ini
+DATABASE_URL=postgresql://postgres.abcdefgh:SUA_SENHA@aws-1-sa-east-1.pooler.supabase.com:5432/postgres
+```
+
+> Use o **Session pooler**, não o "Direct connection": a conexão direta só
+> funciona em rede com IPv6, e a da sua casa provavelmente não tem.
+
+> Se a senha tiver `@`, `/`, `#` ou `:`, troque a senha do banco por uma só com
+> letras e números (Settings → Database → Reset database password). Esses
+> caracteres confundem a leitura do endereço.
+
+### 3. Instalar a biblioteca do Postgres e migrar
+
+Com o site **desligado** (`Ctrl + C`), rode na pasta do projeto:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe migrar_para_supabase.py
+```
+
+O script cria as tabelas lá e copia os doces e **todos os pedidos**, mantendo os
+mesmos números. Ele só grava se o banco de destino estiver vazio — se você já
+tiver ligado o site antes de migrar, ele avisa e não faz nada, para não
+misturar dois cardápios.
+
+Depois é só `.\iniciar.ps1` de sempre. Para conferir que foi, abra o Supabase em
+**Table Editor** e veja as tabelas `produtos`, `pedidos` e `itens_pedido`.
+
+### Voltar atrás
+
+Apague o conteúdo do `DATABASE_URL` no `.env` e ligue de novo: o site volta a
+usar o `docesfefe.db`, que continua intacto no computador.
+
+> ⚠️ As **fotos dos doces** continuam sendo arquivos em
+> `app/static/img/produtos`, no computador — elas não vão para o Supabase. O
+> banco online é o começo do caminho; para o site ficar no ar de verdade ainda
+> falta hospedar o Python (Render ou Railway) e ligar `https_only=True` no
+> cookie de sessão em `app/main.py`. Me chame quando quiserem essa parte.
