@@ -11,11 +11,14 @@ FOTOS_DIR = APP_DIR / "static" / "img" / "produtos"
 class Settings(BaseSettings):
     """Configuração lida do arquivo .env na raiz do projeto."""
 
-    loja_nome: str = "DoceFefe.21"
+    loja_nome: str = "DOCEFEFE.21"
     whatsapp_numero: str = "5511987654321"
+    instagram_url: str = "https://www.instagram.com/docefefe.21"
     admin_senha: str = "troque-esta-senha"
     secret_key: str = "chave-insegura-apenas-para-desenvolvimento"
     antecedencia_dias: int = 1
+    # Vazio = banco local (docesfefe.db). Preenchido = Postgres/Supabase.
+    database_url: str = ""
 
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / ".env",
@@ -27,6 +30,12 @@ class Settings(BaseSettings):
     def whatsapp_limpo(self) -> str:
         """Só os dígitos — é o formato que o link wa.me exige."""
         return "".join(c for c in self.whatsapp_numero if c.isdigit())
+
+    @property
+    def instagram_arroba(self) -> str:
+        """'https://instagram.com/docefefe.21?x=1' -> '@docefefe.21'"""
+        usuario = self.instagram_url.split("?")[0].rstrip("/").rsplit("/", 1)[-1]
+        return f"@{usuario}" if usuario else ""
 
 
 settings = Settings()

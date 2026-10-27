@@ -4,7 +4,7 @@ SQLAlchemy cria as tabelas que faltam, mas não acrescenta colunas novas em
 tabelas que já existem. Aqui a gente faz isso na mão, na subida do servidor.
 """
 
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 
 from app.database import engine
 
@@ -15,12 +15,15 @@ COLUNAS_NOVAS = [
 
 
 def aplicar() -> None:
+    # Pelo inspector, e não por PRAGMA: o PRAGMA só existe no SQLite e isto
+    # também roda no Postgres do Supabase.
+    inspetor = inspect(engine)
+    tabelas = set(inspetor.get_table_names())
+
     with engine.begin() as conn:
         for tabela, coluna, definicao in COLUNAS_NOVAS:
-            existentes = {
-                linha[1] for linha in conn.execute(text(f"PRAGMA table_info({tabela})"))
-            }
-            if not existentes:  # tabela ainda não existe; create_all cuida dela
+            if tabela not in tabelas:  # create_all cuida dela
                 continue
+            existentes = {c["name"] for c in inspetor.get_columns(tabela)}
             if coluna not in existentes:
                 conn.execute(text(f"ALTER TABLE {tabela} ADD COLUMN {coluna} {definicao}"))

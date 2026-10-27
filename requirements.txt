@@ -1,6 +1,8 @@
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
 sqlalchemy==2.0.36
+# Só é usado quando a DATABASE_URL do .env aponta para o Supabase/Postgres.
+psycopg[binary]==3.2.3
 pydantic-settings==2.7.0
 jinja2==3.1.5
 python-multipart==0.0.20
