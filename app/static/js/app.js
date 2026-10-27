@@ -222,8 +222,9 @@ function mostrarSucesso(dados) {
   // não veio de um toque direto. O botão verde é o caminho confiável.
   estado.ultimoPedido = dados;
   estado.abriuWhatsapp = false;
-  $('#modal-resumo').textContent =
-    `Pedido nº ${dados.pedido_id} · Total ${dados.total_formatado}`;
+  // Sem número de pedido: é o id do banco, e o cliente lia "nº 7" como se fosse
+  // a sétima encomenda dele.
+  $('#modal-resumo').textContent = `Pedido realizado · Total ${dados.total_formatado}`;
   $('#btn-whatsapp').href = dados.whatsapp_url;
   $('#modal-sucesso').classList.remove('oculto');
   $('#barra-total').classList.add('oculto');
@@ -250,7 +251,7 @@ function fecharSucesso() {
   if (estado.abriuWhatsapp) {
     aviso.classList.add('enviado');
     $('#aviso-pendente-texto').textContent =
-      `✅ Pedido nº ${pedido.pedido_id} enviado. Aguarde nossa confirmação.`;
+      '✅ Pedido realizado e enviado. Aguarde nossa confirmação.';
     $('#aviso-pendente-link').textContent = 'Abrir conversa';
   } else {
     // Só afirmamos "não enviado" quando a pessoa nem chegou a abrir o WhatsApp.

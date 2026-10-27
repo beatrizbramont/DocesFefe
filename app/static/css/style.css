@@ -16,6 +16,7 @@
   /* Cores da fantasia — usadas com parcimônia, como destaque. */
   --ciano: #2BB3D9;
   --ciano-claro: #BDE8F5;
+  --cinza-claro: #D7DCE4;
   --vermelho: #E0352B;
   --roxo: #6A2D8E;
   --verde: #1E7A46;
@@ -76,21 +77,25 @@ h1, h2, h3, .passo { font-family: var(--titulo); letter-spacing: .6px; font-weig
   text-align: center;
   overflow: hidden;
 }
-/* Texto à esquerda, logo pequena à direita. */
+/* Três colunas: botões | frase | logo. O "1fr auto 1fr" é o que deixa a
+   coluna do meio centralizada de verdade, mesmo com os lados de tamanhos
+   diferentes. No celular isto vira uma coluna só (ver o @media lá embaixo). */
 .capa-conteudo {
-  max-width: 620px;
+  max-width: 980px;
   margin: 0 auto;
   position: relative;
   z-index: 2;
-  display: flex;
+  display: grid;
+  /* minmax(0, auto) e não só "auto": com "auto" a coluna do meio pede a
+     largura da frase inteira sem quebrar, e a capa vaza para fora da tela. */
+  grid-template-columns: 1fr minmax(0, auto) 1fr;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  text-align: left;
+  gap: 18px;
 }
-.capa-texto { flex: 1; min-width: 0; }
+.capa-texto { min-width: 0; text-align: center; }
 
 .capa-logo {
+  justify-self: end;
   width: clamp(76px, 23vw, 118px);
   aspect-ratio: 1;
   flex: none;
@@ -112,7 +117,7 @@ h1, h2, h3, .passo { font-family: var(--titulo); letter-spacing: .6px; font-weig
 }
 .capa p strong { color: var(--amarelo); }
 
-.faixa-bursts { display: flex; justify-content: flex-start; gap: 9px; margin-top: 14px; flex-wrap: wrap; }
+.faixa-bursts { display: flex; justify-content: center; gap: 9px; margin-top: 14px; flex-wrap: wrap; }
 .burst {
   font-family: var(--titulo);
   font-size: 17px;
@@ -125,11 +130,60 @@ h1, h2, h3, .passo { font-family: var(--titulo); letter-spacing: .6px; font-weig
   transform: rotate(-4deg);
   clip-path: polygon(6% 0, 94% 4%, 100% 50%, 93% 97%, 50% 88%, 7% 100%, 0 48%);
 }
-.burst:nth-child(1) { background: var(--vermelho); }
-.burst:nth-child(2) { background: var(--roxo); transform: rotate(3deg); }
-.burst:nth-child(3) { background: var(--ciano); transform: rotate(-2deg); }
+/* T 2 1 nas cores pedidas: azul, amarelo e cinza claro. Nos dois fundos
+   claros a letra vira azul-marinho, senão o amarelo some dentro deles. */
+.burst:nth-child(1) { background: var(--ciano); }
+.burst:nth-child(2) { background: var(--amarelo); transform: rotate(3deg); }
+.burst:nth-child(3) { background: var(--cinza-claro); transform: rotate(-2deg); }
+.burst:nth-child(2), .burst:nth-child(3) { color: var(--marinho-escuro); }
+
+/* ---------------------------------------------------- botoes da capa */
+.capa-acoes {
+  justify-self: start;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.botao-insta,
+.botao-pedir {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  /* 44px de altura: é o mínimo para o dedo acertar sem erro no celular. */
+  min-height: 44px;
+  padding: 9px 16px;
+  border: 3px solid var(--marinho-escuro);
+  border-radius: 999px;
+  text-decoration: none;
+  box-shadow: 3px 3px 0 var(--marinho-escuro);
+  transition: transform .08s, box-shadow .08s;
+}
+.botao-insta:active,
+.botao-pedir:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--marinho-escuro); }
+
+.botao-insta { background: var(--creme); color: var(--marinho); font-weight: 800; font-size: 14px; }
+/* O ícone é desenhado no próprio HTML: nenhuma imagem externa para carregar. */
+.botao-insta svg { width: 19px; height: 19px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; }
+.botao-insta .insta-ponto { fill: currentColor; stroke: none; }
+
+.botao-pedir {
+  background: var(--amarelo);
+  color: var(--marinho-escuro);
+  font-family: var(--titulo);
+  font-size: 18px;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+}
 
 .container { max-width: 620px; margin: 0 auto; padding: 28px 16px 0; }
+
+/* O botão da capa rola ate o formulário; sem isto o título cola no topo. */
+html { scroll-behavior: smooth; }
+#etapa-dados { scroll-margin-top: 14px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
 /* ---------------------------------------------------------- a causa */
 .causa {
@@ -478,6 +532,16 @@ textarea { resize: vertical; }
 }
 
 .rodape { text-align: center; color: var(--texto-suave); font-size: 13px; font-weight: 600; padding: 34px 16px 10px; }
+.rodape p { margin: 0 0 6px; }
+/* inline-block + padding: como link de texto puro ele tinha 19px de altura,
+   alvo pequeno demais para o dedo. */
+.link-insta {
+  display: inline-block;
+  padding: 10px 4px;
+  color: var(--roxo);
+  text-decoration: none;
+  border-bottom: 2px solid var(--amarelo);
+}
 
 /* ========================================================== PAINEL */
 .admin-topo {
@@ -675,7 +739,16 @@ textarea { resize: vertical; }
 .doce-info small { color: var(--texto-suave); font-weight: 500; }
 
 /* ---------------------------------------------------------- modais do painel */
-.modal-largo { max-width: 540px; text-align: left; max-height: 92vh; overflow-y: auto; }
+/* dvh em vez de vh: no iPhone o "vh" conta a barra do navegador junto, e os
+   botões de salvar ficavam escondidos embaixo dela. O vh fica de reserva para
+   navegador antigo que não conhece dvh. */
+.modal-largo {
+  max-width: 540px;
+  text-align: left;
+  max-height: 92vh;
+  max-height: 92dvh;
+  overflow-y: auto;
+}
 .modal-largo h2 { text-align: center; color: var(--marinho); }
 
 .linha-dupla { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -754,9 +827,162 @@ textarea { resize: vertical; }
 .login-caixa form { text-align: left; }
 .login-logo { width: 110px; height: 110px; border-radius: 50%; object-fit: cover; background: var(--creme); }
 
+/* ---------------------------------------------------- aba recebimentos */
+/* Uma linha só de filtros, acima de tudo: eles valem para o resumo, o
+   gráfico e a tabela ao mesmo tempo. */
+.filtros-receb {
+  display: flex;
+  gap: 10px 18px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.grupo-filtro { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }
+.periodo-custom label { font-size: 12.5px; font-weight: 700; color: var(--texto-suave); text-transform: uppercase; }
+.periodo-custom input {
+  border: 2px solid var(--marinho);
+  border-radius: 9px;
+  padding: 6px 9px;
+  font: inherit;
+  font-size: 13.5px;
+  background: var(--branco);
+  color: var(--texto);
+}
+
+/* O total recebido é o número que ela vem ver — ganha o verde e o tamanho. */
+.resumo .cartao.destaque strong { color: var(--verde); font-size: 36px; }
+
+.grafico-caixa {
+  background: var(--branco);
+  border: var(--borda);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra-hq);
+  padding: 16px 18px 10px;
+  margin: 0 0 22px;
+}
+.grafico-caixa figcaption {
+  font-family: var(--titulo);
+  font-size: 23px;
+  color: var(--marinho);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.grafico-caixa .explica { margin: 2px 0 10px; }
+.grafico-caixa .explica b { color: var(--marinho); }
+
+.grafico-area { position: relative; transition: opacity .15s; }
+#rec-grafico { overflow-x: auto; overflow-y: hidden; }
+#rec-grafico svg { display: block; }
+
+/* O clarear da barra no hover é feito no admin.js (ver comentário lá). */
+.barra-receb { transition: fill .1s; }
+.alvo-barra { cursor: default; outline: none; }
+.alvo-barra:focus-visible { outline: 3px solid var(--roxo); outline-offset: -3px; }
+
+.grafico-dica {
+  position: absolute;
+  /* O admin.js já calcula o topo contando a altura da dica; aqui só subimos
+     a própria caixa. Mexer nesta porcentagem desencontra os dois. */
+  transform: translate(-50%, -100%);
+  background: var(--marinho);
+  color: var(--branco);
+  border-radius: 9px;
+  padding: 7px 11px;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 5;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .25);
+}
+/* O valor manda; o período é o apoio. */
+.grafico-dica strong { display: block; font-size: 16px; color: var(--amarelo); }
+.grafico-dica span { display: block; font-size: 11.5px; opacity: .85; }
+
+.tabela-wrap { overflow-x: auto; margin-bottom: 26px; }
+.tabela-receb {
+  width: 100%;
+  min-width: 420px;
+  border-collapse: collapse;
+  background: var(--branco);
+  border: var(--borda);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra-hq);
+  overflow: hidden;
+}
+.tabela-receb th, .tabela-receb td { padding: 9px 14px; text-align: left; font-size: 14px; }
+.tabela-receb .num { text-align: right; font-variant-numeric: tabular-nums; }
+.tabela-receb thead th {
+  background: var(--creme-fundo);
+  font-size: 11.5px;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+  letter-spacing: .4px;
+}
+.tabela-receb tbody tr + tr { border-top: 1px solid var(--creme-fundo); }
+.tabela-receb tbody th { font-weight: 700; }
+.tabela-receb tbody .num:last-child { font-weight: 800; color: var(--marinho); }
+.tabela-receb .sem-movimento { color: var(--texto-suave); }
+.tabela-receb tfoot tr { border-top: 3px solid var(--marinho); background: var(--creme); }
+.tabela-receb tfoot th, .tabela-receb tfoot td { font-weight: 800; font-size: 15px; color: var(--marinho); }
+
+/* ---------------------------------------------------- capa no celular
+   As três colunas não cabem num telefone. Vira uma coluna só, nesta ordem:
+   logo, frase + T21, botões. Os botões ficam por último e largos, que é
+   onde o polegar alcança. É daqui que vem quase todo o acesso ao site. */
+@media (max-width: 760px) {
+  /* "stretch" e não "center": centralizando, cada item passaria a ter a
+     largura do próprio conteúdo e a frase empurraria a página para fora da
+     tela. Esticado, ele ocupa a coluna e o texto quebra sozinho. */
+  .capa-conteudo { grid-template-columns: minmax(0, 1fr); justify-items: stretch; gap: 14px; }
+  .capa-logo  { order: 1; justify-self: center; }
+  .capa-texto { order: 2; }
+  .capa-acoes { order: 3; align-items: stretch; }
+}
+
+/* ------------------------------------------- painel no celular
+   A mãe da dona controla tudo pelo telefone, então aqui o que manda é o
+   tamanho do alvo do dedo: 44px é o mínimo para não errar o toque. */
+@media (max-width: 760px) {
+  .modal { padding: 10px; }
+
+  .abas { gap: 6px; padding: 10px 10px 0; }
+  .aba { padding: 9px 13px; font-size: 16px; }
+  .numero-ativo { margin-left: 0; width: 100%; padding: 2px 0 6px; }
+
+  .admin-container { padding-left: 12px; padding-right: 12px; }
+
+  /* Novo pedido e Baixar planilha ocupando a linha toda: mais fáceis de achar
+     e de acertar do que dois botõezinhos lado a lado. */
+  .barra-acoes .botao-planilha { flex: 1 1 100%; text-align: center; min-height: 44px; }
+
+  .btn-acao { min-height: 44px; padding: 10px 14px; font-size: 14px; }
+  .pedido-botoes { gap: 7px; }
+  .pedido-botoes .btn-acao { flex: 1 1 auto; }
+
+  .contador button { width: 44px; height: 44px; }
+  .contador input { height: 44px; width: 52px; }
+  .editor-item { padding: 10px 12px; }
+
+  .modal-botoes { gap: 8px; }
+  .modal-botoes .btn-acao { flex: 1; }
+  .modal-caixa h2 { font-size: 27px; }
+
+  .filtros-receb { gap: 8px 12px; }
+  .periodo-custom { flex: 1 1 100%; }
+  .periodo-custom input { flex: 1; min-height: 44px; }
+  .filtro { min-height: 40px; }
+}
+
+/* Com o contador em 44px (bom para o dedo), foto + nome + contador não cabem
+   mais na mesma linha num telefone: o nome do doce quebrava no meio. O
+   contador desce para uma linha só dele, encostado à direita. */
+@media (max-width: 460px) {
+  .produto { flex-wrap: wrap; }
+  .produto-info { flex: 1 1 0; min-width: 130px; }
+  .produto .contador { flex: 1 1 100%; justify-content: flex-end; margin-top: 2px; }
+}
+
 @media (max-width: 420px) {
   .linha-dupla { grid-template-columns: 1fr; }
-  /* Celular estreito: texto e bursts menores para caberem ao lado da logo. */
   .capa { padding: 20px 14px 22px; }
   .capa p { font-size: 14px; }
   .faixa-bursts { gap: 6px; margin-top: 11px; }

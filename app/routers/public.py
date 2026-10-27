@@ -23,6 +23,8 @@ def home(request: Request):
         "index.html",
         {
             "loja_nome": settings.loja_nome,
+            "instagram_url": settings.instagram_url,
+            "instagram_arroba": settings.instagram_arroba,
             "data_minima": minima.isoformat(),
             "data_maxima": (date.today() + timedelta(days=180)).isoformat(),
         },

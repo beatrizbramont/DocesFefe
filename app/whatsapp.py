@@ -44,7 +44,7 @@ def montar_mensagem(pedido: Pedido) -> str:
     if pedido.observacoes:
         linhas.append(f"*Observações:* {pedido.observacoes}")
 
-    linhas += ["", f"_Pedido #{pedido.id} — aguardando sua confirmação_"]
+    linhas += ["", "_Pedido realizado pelo site — aguardando sua confirmação_"]
     return "\n".join(linhas)
 
 

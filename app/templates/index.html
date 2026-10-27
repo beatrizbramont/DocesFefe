@@ -19,19 +19,38 @@
 <body data-data-minima="{{ data_minima }}" data-data-maxima="{{ data_maxima }}">
 
 <header class="capa">
+  <!-- Três colunas: botões à esquerda, frase no meio, logo à direita. -->
   <div class="capa-conteudo">
+
+    <div class="capa-acoes">
+      <a class="botao-insta" href="{{ instagram_url }}" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <rect x="2.6" y="2.6" width="18.8" height="18.8" rx="5.4"/>
+          <circle cx="12" cy="12" r="4.5"/>
+          <circle cx="17.5" cy="6.5" r="1.5" class="insta-ponto"/>
+        </svg>
+        <span>{{ instagram_arroba }}</span>
+      </a>
+
+      <!-- Leva direto para o formulário: sem isto a pessoa chega na capa e não
+           sabe que o pedido é feito aqui mesmo, rolando a página. -->
+      <a class="botao-pedir" href="#etapa-dados">
+        🧁 Fazer meu pedido
+      </a>
+    </div>
+
     <div class="capa-texto">
       <!-- O nome da loja já está dentro da logo; o h1 fica para leitores de tela. -->
       <h1 class="so-leitor">{{ loja_nome }} — doces que adoçam momentos</h1>
       <p>Feitos à mão, com muito carinho e aceitamos encomendas.💛</p>
+
       <div class="faixa-bursts">
         <span class="burst">T</span>
         <span class="burst">2</span>
         <span class="burst">1</span>
-
-        
       </div>
     </div>
+
     <img src="/static/img/logo.png" alt="{{ loja_nome }}" class="capa-logo"
          onerror="this.outerHTML='<span class=\'capa-emoji\'>🦸</span>'">
   </div>
@@ -168,6 +187,11 @@
 
 <footer class="rodape">
   <p>{{ loja_nome }} · doces que adoçam momentos 💛</p>
+  <p>
+    <a class="link-insta" href="{{ instagram_url }}" target="_blank" rel="noopener">
+      Siga a gente no Instagram: {{ instagram_arroba }}
+    </a>
+  </p>
 </footer>
 
 <script src="/static/js/app.js"></script>

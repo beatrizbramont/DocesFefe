@@ -1,6 +1,6 @@
 """Cadastro inicial dos doces — roda só na primeira vez que o site sobe.
 
-Depois disso sua mãe edita tudo pelo painel /admin, não precisa mexer aqui.
+Depois disso edite tudo pelo painel /admin, não precisa mexer aqui.
 """
 
 from sqlalchemy import select
