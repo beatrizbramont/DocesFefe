@@ -3,7 +3,9 @@ __pycache__/
 *.pyc
 
 # Configuração com senha e número de telefone — nunca versionar.
-.env
+# O * cobre também cópias como .env.backup, que senão escapariam.
+.env*
+!.env.example
 
 # Dados reais da loja
 docesfefe.db
